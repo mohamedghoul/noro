@@ -233,3 +233,6 @@ extension/src/config.ts
 extension/dist/config.js
 **/config.ts
 !**/config.template.ts
+
+# Lambda test image
+backend/lambdas/test_img.png
