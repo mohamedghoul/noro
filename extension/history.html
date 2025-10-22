@@ -97,38 +97,6 @@
 				color: #1e5aa8;
 			}
 
-			.search-container {
-				flex: 1;
-				max-width: 400px;
-				margin: 0 40px;
-				position: relative;
-			}
-
-			.search-input {
-				width: 100%;
-				padding: 12px 20px 12px 45px;
-				border: 1px solid #e5e7eb;
-				border-radius: 10px;
-				font-size: 16px;
-				font-family: inherit;
-				outline: none;
-				transition: all 0.3s ease;
-			}
-
-			.search-input:focus {
-				border-color: #1e5aa8;
-				box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.1);
-			}
-
-			.search-icon {
-				position: absolute;
-				left: 16px;
-				top: 50%;
-				transform: translateY(-50%);
-				color: #6b7280;
-				font-size: 18px;
-			}
-
 			.controls {
 				display: flex;
 				gap: 12px;
@@ -542,15 +510,6 @@
 						/>
 						Noro History
 					</h1>
-				</div>
-				<div class="search-container">
-					<span class="search-icon">🔍</span>
-					<input
-						type="text"
-						class="search-input"
-						placeholder="Search workspaces, documents, or activities..."
-						id="searchInput"
-					/>
 				</div>
 				<div class="controls">
 					<button class="btn btn-secondary" id="clearAllBtn">🗑️ Clear All</button>

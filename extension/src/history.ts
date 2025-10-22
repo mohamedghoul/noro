@@ -3,7 +3,6 @@ import { WorkspaceCapture, WindowSnapshot, TabSnapshot, PageSnapshot, IconConfig
 // State management
 let allWorkspaces: WorkspaceCapture[] = [];
 let filteredWorkspaces: WorkspaceCapture[] = [];
-let searchQuery = "";
 
 document.addEventListener("DOMContentLoaded", async () => {
 	await loadWorkspaceHistory();
@@ -286,8 +285,9 @@ function showWorkspaceDetails(workspace: WorkspaceCapture): void {
                     ${window.tabs
 						.map(
 							(tab) => `
-                        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f9fafb; border-radius: 8px; cursor: pointer;" 
-                             onclick="openOrSwitchToTab('${tab.snapshot.url}')">
+                        <div class="history-tab-item" data-url="${
+							tab.snapshot.url
+						}" style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #f9fafb; border-radius: 8px; cursor: pointer;">
                             <div style="width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 4px; background: #e5e7eb;">
                                 ${getTabIcon(tab.snapshot.type)}
                             </div>
@@ -314,6 +314,18 @@ function showWorkspaceDetails(workspace: WorkspaceCapture): void {
     `;
 
 	modal.style.display = "block";
+
+	// Add event delegation for tab items in modal
+	modalContent.addEventListener("click", (e) => {
+		const target = e.target as HTMLElement;
+		const tabItem = target.closest(".history-tab-item") as HTMLElement;
+		if (tabItem) {
+			const url = tabItem.dataset.url;
+			if (url) {
+				openOrSwitchToTab(url);
+			}
+		}
+	});
 }
 
 function getTabIcon(type: string): string {
@@ -399,33 +411,6 @@ async function clearAllWorkspaces(): Promise<void> {
 	}
 }
 
-function searchWorkspaces(query: string): void {
-	searchQuery = query.toLowerCase();
-
-	if (!searchQuery) {
-		filteredWorkspaces = [...allWorkspaces];
-	} else {
-		filteredWorkspaces = allWorkspaces.filter((workspace) => {
-			// Search in workspace summary
-			const hasActiveTabs = workspace.windows.some((window) =>
-				window.tabs.some((tab) => {
-					const taskInfo = getTaskInfo(tab);
-					return (
-						taskInfo.title.toLowerCase().includes(searchQuery) ||
-						taskInfo.context.toLowerCase().includes(searchQuery) ||
-						tab.snapshot.url.toLowerCase().includes(searchQuery) ||
-						tab.snapshot.title.toLowerCase().includes(searchQuery)
-					);
-				})
-			);
-
-			return hasActiveTabs;
-		});
-	}
-
-	displayWorkspaces();
-}
-
 function showEmptyState(): void {
 	const loadingState = document.getElementById("loadingState")!;
 	const workspaceGrid = document.getElementById("workspaceGrid")!;
@@ -487,13 +472,6 @@ function goBackToDashboard(): void {
 }
 
 function setupEventListeners(): void {
-	// Search functionality
-	const searchInput = document.getElementById("searchInput") as HTMLInputElement;
-	searchInput.addEventListener("input", (e) => {
-		const query = (e.target as HTMLInputElement).value;
-		searchWorkspaces(query);
-	});
-
 	// Clear all button
 	const clearAllBtn = document.getElementById("clearAllBtn") as HTMLButtonElement;
 	clearAllBtn.addEventListener("click", clearAllWorkspaces);
@@ -524,8 +502,5 @@ function setupEventListeners(): void {
 		}
 	});
 }
-
-// Make openOrSwitchToTab available globally for modal use
-(window as any).openOrSwitchToTab = openOrSwitchToTab;
 
 console.log("[HISTORY] History page loaded");
