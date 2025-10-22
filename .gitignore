@@ -227,3 +227,9 @@ backend/lambdas/dist/
 /tmp/**
 /pia_pkg/
 /**/pia_pkg/**
+
+# Extension secrets - DO NOT COMMIT
+extension/src/config.ts
+extension/dist/config.js
+**/config.ts
+!**/config.template.ts

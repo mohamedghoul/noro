@@ -1,20 +1,10 @@
 import { ContextSubmission, AIInsight, InsightsResponse, APIError, HealthResponse, WorkspaceCapture } from "./types.js";
+import { API_CONFIG, RATE_LIMITS } from "./config.js";
 
-// AWS API Configuration
-const API_BASE_URL = "https://sb21puxxcd.execute-api.us-east-1.amazonaws.com/prod";
-const API_KEY = "imcyLnEytbFl6gPXsQPYKQEL1gMSY15AV0hOsmeA";
-const API_ENDPOINTS = {
-	context: `${API_BASE_URL}/context`,
-	insights: `${API_BASE_URL}/insights`,
-	health: `${API_BASE_URL}/health`,
-};
-
-// Rate limiting configuration
-const RATE_LIMITS = {
-	MAX_REQUESTS_PER_MINUTE: 5,
-	MAX_REQUESTS_PER_HOUR: 20,
-	MIN_INTERVAL_MS: 12000, // 12 seconds between requests (5 per minute)
-};
+// AWS API Configuration - now imported from secure config
+const API_BASE_URL = API_CONFIG.baseUrl;
+const API_KEY = API_CONFIG.apiKey;
+const API_ENDPOINTS = API_CONFIG.endpoints;
 
 class AWSAPIService {
 	private static instance: AWSAPIService;
@@ -482,24 +472,22 @@ class AWSAPIService {
 				new Date(lastSubmission).toISOString()
 			);
 			console.log(`[AWS] ${new Date().toISOString()} - - Time since last:`, now - lastSubmission, "ms");
+		console.log(
+			`[AWS] ${new Date().toISOString()} - - Min interval required:`,
+			RATE_LIMITS.minIntervalMs,
+			"ms"
+		);
+
+		// Check minimum interval (12 seconds)
+		if (now - lastSubmission < RATE_LIMITS.minIntervalMs) {
+			console.log(`[AWS] ${new Date().toISOString()} - ❌ RATE LIMIT BLOCKED: minimum interval not met`);
 			console.log(
-				`[AWS] ${new Date().toISOString()} - - Min interval required:`,
-				RATE_LIMITS.MIN_INTERVAL_MS,
-				"ms"
+				`[AWS] ${new Date().toISOString()} - - Need to wait:`,
+				RATE_LIMITS.minIntervalMs - (now - lastSubmission),
+				"ms more"
 			);
-
-			// Check minimum interval (12 seconds)
-			if (now - lastSubmission < RATE_LIMITS.MIN_INTERVAL_MS) {
-				console.log(`[AWS] ${new Date().toISOString()} - ❌ RATE LIMIT BLOCKED: minimum interval not met`);
-				console.log(
-					`[AWS] ${new Date().toISOString()} - - Need to wait:`,
-					RATE_LIMITS.MIN_INTERVAL_MS - (now - lastSubmission),
-					"ms more"
-				);
-				return false;
-			}
-
-			// Reset counters if time windows have passed
+			return false;
+		}			// Reset counters if time windows have passed
 			let requestsThisMinute = data.aws_requests_minute || 0;
 			let requestsThisHour = data.aws_requests_hour || 0;
 
@@ -519,33 +507,31 @@ class AWSAPIService {
 				requestsThisHour = 0;
 			}
 
+		console.log(
+			`[AWS] ${new Date().toISOString()} - Final counters: minute=${requestsThisMinute}/${
+				RATE_LIMITS.maxRequestsPerMinute
+			}, hour=${requestsThisHour}/${RATE_LIMITS.maxRequestsPerHour}`
+		);
+
+		// Check per-minute limit
+		if (requestsThisMinute >= RATE_LIMITS.maxRequestsPerMinute) {
 			console.log(
-				`[AWS] ${new Date().toISOString()} - Final counters: minute=${requestsThisMinute}/${
-					RATE_LIMITS.MAX_REQUESTS_PER_MINUTE
-				}, hour=${requestsThisHour}/${RATE_LIMITS.MAX_REQUESTS_PER_HOUR}`
+				`[AWS] ${new Date().toISOString()} - ❌ RATE LIMIT BLOCKED: per-minute limit exceeded (${requestsThisMinute}/${
+					RATE_LIMITS.maxRequestsPerMinute
+				})`
 			);
+			return false;
+		}
 
-			// Check per-minute limit
-			if (requestsThisMinute >= RATE_LIMITS.MAX_REQUESTS_PER_MINUTE) {
-				console.log(
-					`[AWS] ${new Date().toISOString()} - ❌ RATE LIMIT BLOCKED: per-minute limit exceeded (${requestsThisMinute}/${
-						RATE_LIMITS.MAX_REQUESTS_PER_MINUTE
-					})`
-				);
-				return false;
-			}
-
-			// Check per-hour limit
-			if (requestsThisHour >= RATE_LIMITS.MAX_REQUESTS_PER_HOUR) {
-				console.log(
-					`[AWS] ${new Date().toISOString()} - ❌ RATE LIMIT BLOCKED: per-hour limit exceeded (${requestsThisHour}/${
-						RATE_LIMITS.MAX_REQUESTS_PER_HOUR
-					})`
-				);
-				return false;
-			}
-
-			console.log(`[AWS] ${new Date().toISOString()} - ✅ RATE LIMITS PASSED: submission allowed`);
+		// Check per-hour limit
+		if (requestsThisHour >= RATE_LIMITS.maxRequestsPerHour) {
+			console.log(
+				`[AWS] ${new Date().toISOString()} - ❌ RATE LIMIT BLOCKED: per-hour limit exceeded (${requestsThisHour}/${
+					RATE_LIMITS.maxRequestsPerHour
+				})`
+			);
+			return false;
+		}			console.log(`[AWS] ${new Date().toISOString()} - ✅ RATE LIMITS PASSED: submission allowed`);
 			return true;
 		} catch (error) {
 			console.error(`[AWS] ${new Date().toISOString()} - ❌ EXCEPTION in shouldSubmitContext():`, error);
