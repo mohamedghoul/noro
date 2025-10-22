@@ -472,22 +472,22 @@ class AWSAPIService {
 				new Date(lastSubmission).toISOString()
 			);
 			console.log(`[AWS] ${new Date().toISOString()} - - Time since last:`, now - lastSubmission, "ms");
-		console.log(
-			`[AWS] ${new Date().toISOString()} - - Min interval required:`,
-			RATE_LIMITS.minIntervalMs,
-			"ms"
-		);
-
-		// Check minimum interval (12 seconds)
-		if (now - lastSubmission < RATE_LIMITS.minIntervalMs) {
-			console.log(`[AWS] ${new Date().toISOString()} - ❌ RATE LIMIT BLOCKED: minimum interval not met`);
 			console.log(
-				`[AWS] ${new Date().toISOString()} - - Need to wait:`,
-				RATE_LIMITS.minIntervalMs - (now - lastSubmission),
-				"ms more"
+				`[AWS] ${new Date().toISOString()} - - Min interval required:`,
+				RATE_LIMITS.minIntervalMs,
+				"ms"
 			);
-			return false;
-		}			// Reset counters if time windows have passed
+
+			// Check minimum interval (12 seconds)
+			if (now - lastSubmission < RATE_LIMITS.minIntervalMs) {
+				console.log(`[AWS] ${new Date().toISOString()} - ❌ RATE LIMIT BLOCKED: minimum interval not met`);
+				console.log(
+					`[AWS] ${new Date().toISOString()} - - Need to wait:`,
+					RATE_LIMITS.minIntervalMs - (now - lastSubmission),
+					"ms more"
+				);
+				return false;
+			} // Reset counters if time windows have passed
 			let requestsThisMinute = data.aws_requests_minute || 0;
 			let requestsThisHour = data.aws_requests_hour || 0;
 
@@ -507,31 +507,32 @@ class AWSAPIService {
 				requestsThisHour = 0;
 			}
 
-		console.log(
-			`[AWS] ${new Date().toISOString()} - Final counters: minute=${requestsThisMinute}/${
-				RATE_LIMITS.maxRequestsPerMinute
-			}, hour=${requestsThisHour}/${RATE_LIMITS.maxRequestsPerHour}`
-		);
-
-		// Check per-minute limit
-		if (requestsThisMinute >= RATE_LIMITS.maxRequestsPerMinute) {
 			console.log(
-				`[AWS] ${new Date().toISOString()} - ❌ RATE LIMIT BLOCKED: per-minute limit exceeded (${requestsThisMinute}/${
+				`[AWS] ${new Date().toISOString()} - Final counters: minute=${requestsThisMinute}/${
 					RATE_LIMITS.maxRequestsPerMinute
-				})`
+				}, hour=${requestsThisHour}/${RATE_LIMITS.maxRequestsPerHour}`
 			);
-			return false;
-		}
 
-		// Check per-hour limit
-		if (requestsThisHour >= RATE_LIMITS.maxRequestsPerHour) {
-			console.log(
-				`[AWS] ${new Date().toISOString()} - ❌ RATE LIMIT BLOCKED: per-hour limit exceeded (${requestsThisHour}/${
-					RATE_LIMITS.maxRequestsPerHour
-				})`
-			);
-			return false;
-		}			console.log(`[AWS] ${new Date().toISOString()} - ✅ RATE LIMITS PASSED: submission allowed`);
+			// Check per-minute limit
+			if (requestsThisMinute >= RATE_LIMITS.maxRequestsPerMinute) {
+				console.log(
+					`[AWS] ${new Date().toISOString()} - ❌ RATE LIMIT BLOCKED: per-minute limit exceeded (${requestsThisMinute}/${
+						RATE_LIMITS.maxRequestsPerMinute
+					})`
+				);
+				return false;
+			}
+
+			// Check per-hour limit
+			if (requestsThisHour >= RATE_LIMITS.maxRequestsPerHour) {
+				console.log(
+					`[AWS] ${new Date().toISOString()} - ❌ RATE LIMIT BLOCKED: per-hour limit exceeded (${requestsThisHour}/${
+						RATE_LIMITS.maxRequestsPerHour
+					})`
+				);
+				return false;
+			}
+			console.log(`[AWS] ${new Date().toISOString()} - ✅ RATE LIMITS PASSED: submission allowed`);
 			return true;
 		} catch (error) {
 			console.error(`[AWS] ${new Date().toISOString()} - ❌ EXCEPTION in shouldSubmitContext():`, error);
