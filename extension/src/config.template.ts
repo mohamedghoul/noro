@@ -7,10 +7,7 @@
  * 1. Copy this file to 'config.ts' in the same directory
  * 2. Replace the placeholder values with your actual AWS credentials
  * 3. The config.ts file is gitignored and will not be committed
- *
- * For production releases:
- * - Use GitHub Secrets to store credentials securely
- * - Credentials should be injected during the build process
+ * 4. Build and create releases locally using 'npm run release'
  */
 
 export interface APIConfig {
