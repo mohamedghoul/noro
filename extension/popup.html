@@ -11,10 +11,14 @@
 		<style>
 			body {
 				width: 750px;
-				height: 600px;
+				min-height: 600px;
+				max-height: 800px;
 				padding: 16px;
 				font-family: Poppins, Arial, Helvetica, sans-serif;
 				overflow-x: hidden;
+				overflow-y: auto;
+				box-sizing: border-box;
+				margin: 0;
 			}
 
 			h1 {
@@ -347,17 +351,20 @@
 			.main-layout {
 				display: flex;
 				gap: 16px;
-				height: calc(100vh - 120px); /* Account for header */
+				min-height: 400px;
+				align-items: flex-start;
 			}
 
 			.left-column {
 				flex: 1;
 				min-width: 0; /* Allow shrinking */
+				max-width: 430px;
 			}
 
 			.right-column {
 				width: 280px;
 				flex-shrink: 0;
+				min-width: 280px;
 			}
 
 			/* Main Task Card */
@@ -454,9 +461,10 @@
 				border-radius: 12px;
 				padding: 20px;
 				height: fit-content;
-				max-height: 500px;
+				max-height: 400px;
 				overflow-y: auto;
 				box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+				position: relative;
 			}
 
 			.section-header {
@@ -532,6 +540,9 @@
 				color: #1e5aa8;
 				flex: 1;
 				margin-right: 12px;
+				word-wrap: break-word;
+				overflow-wrap: break-word;
+				line-height: 1.3;
 			}
 
 			.recent-task-time {
@@ -649,6 +660,8 @@
 				color: #374151;
 				margin-bottom: 16px;
 				line-height: 1.4;
+				word-wrap: break-word;
+				overflow-wrap: break-word;
 			}
 
 			/* Special styling for arrow-type suggestions */
@@ -679,6 +692,54 @@
 			.suggested-actions button {
 				font-size: 14px;
 				padding: 6px 12px;
+			}
+
+			/* Fix text overlapping issues */
+			.suggested-item-content {
+				flex: 1;
+				min-width: 0;
+				overflow: hidden;
+			}
+
+			.recent-task-content {
+				flex: 1;
+				min-width: 0;
+				overflow: hidden;
+			}
+
+			.main-task-content {
+				margin-bottom: 20px;
+				overflow: hidden;
+			}
+
+			/* Prevent text overflow */
+			.task-description,
+			.recent-task-meta,
+			.recent-task-next,
+			.suggested-item-question {
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: normal;
+				word-break: break-word;
+			}
+
+			/* Ensure proper spacing between sections */
+			.suggested-section {
+				margin-bottom: 16px;
+			}
+
+			.suggested-section:last-child {
+				margin-bottom: 0;
+			}
+
+			.recent-task-item {
+				clear: both;
+				position: relative;
+			}
+
+			/* Fix for Mac Chrome specific issues */
+			* {
+				box-sizing: border-box;
 			}
 
 			/* Responsive adjustments */
@@ -762,7 +823,7 @@
 				<div id="recentTasks" class="recent-tasks-section">
 					<div class="section-header">
 						<div class="section-title">Recent tasks</div>
-						<button class="trash-btn" onclick="clearRecentTasks()">🗑️</button>
+						<button class="trash-btn" id="clearRecentTasksBtn">🗑️</button>
 					</div>
 					<div class="recent-tasks-list">
 						<!-- Recent tasks will be populated here -->

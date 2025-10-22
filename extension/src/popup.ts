@@ -72,14 +72,8 @@ async function loadRealData(): Promise<void> {
 			console.log("[POPUP] Calling displayWorkspaceData");
 			displayWorkspaceData(workspaces);
 		} else {
-			console.log("[POPUP] No workspaces found, creating sample data for testing");
-			const sampleWorkspaces = createSampleWorkspaces();
-			if (sampleWorkspaces.length > 0) {
-				currentWorkspace = sampleWorkspaces[0];
-				displayWorkspaceData(sampleWorkspaces);
-			} else {
-				displayEmptyState();
-			}
+			console.log("[POPUP] No workspaces found, showing empty state");
+			displayEmptyState();
 		}
 
 		updateStatusDisplay();
@@ -237,6 +231,17 @@ function renderAIInsights(insights: AIInsight[]): void {
 		insightsSection.appendChild(insightCard);
 	});
 
+	// Add event delegation for insight action buttons
+	insightsSection.addEventListener("click", (e) => {
+		const target = e.target as HTMLElement;
+		if (target.classList.contains("insight-action-btn")) {
+			const insightId = target.dataset.insightId;
+			if (insightId) {
+				handleInsightAction(insightId);
+			}
+		}
+	});
+
 	console.log(`[POPUP] ${new Date().toISOString()} - AI insights rendering complete`);
 }
 
@@ -267,19 +272,34 @@ function createInsightCard(insight: AIInsight): HTMLElement {
 			<div class="task-icon" style="background: ${priorityColor}20;">
 				<img src="${typeIconPath}" alt="Insight" style="width: 16px; height: 16px;">
 			</div>
-			<div class="task-title">${insight.title}</div>
-			<div class="task-time">${Math.round(insight.confidence * 100)}%</div>
-		</div>
-		<div class="task-context">AI Analysis</div>
-		<div class="task-description">${insight.description}</div>
-		<div class="task-actions">
-			<button class="primary" onclick="handleInsightAction('${insight.id}')">
-				${buttonText}
-			</button>
-		</div>
-	`;
-
+		<div class="task-title">${insight.title}</div>
+		<div class="task-time">${Math.round(insight.confidence * 100)}%</div>
+	</div>
+	<div class="task-context">AI Analysis</div>
+	<div class="task-description">${insight.description}</div>
+	<div class="task-actions">
+		<button class="primary insight-action-btn" data-insight-id="${insight.id}">
+			${buttonText}
+		</button>
+	</div>
+`;
 	return card;
+}
+
+function handleInsightAction(insightId: string, action?: string): void {
+	console.log("[POPUP] Handling insight action for:", insightId, "Action:", action);
+	// Insight action could involve opening a URL, switching tabs, etc.
+	// For now, we'll just log it - this can be expanded based on insight type
+}
+
+function handleActivityAction(activityId: string, action: string): void {
+	console.log("[POPUP] Handling activity action for:", activityId, "Action:", action);
+	// Activity action could involve opening tabs, resuming work, etc.
+}
+
+function resumeActivity(activityId: string): void {
+	console.log("[POPUP] Resuming activity:", activityId);
+	// Resume activity logic - this could involve opening relevant tabs, etc.
 }
 
 function getInsightActionText(insight: AIInsight): string {
@@ -516,8 +536,8 @@ function displayEmptyState(): void {
 	const statusMessage = document.querySelector(".status-message") as HTMLElement;
 	const statusSubtitle = document.querySelector(".status-subtitle") as HTMLElement;
 
-	if (statusMessage) statusMessage.textContent = "All caught up!";
-	if (statusSubtitle) statusSubtitle.textContent = "No recent activity to show.";
+	if (statusMessage) statusMessage.textContent = "No activity captured yet";
+	if (statusSubtitle) statusSubtitle.textContent = "Start browsing and working to see your productivity insights";
 
 	const trackingStatus = document.querySelector(".tracking-status") as HTMLElement;
 	if (trackingStatus) trackingStatus.style.display = "none";
@@ -533,13 +553,11 @@ function displayEmptyMainTaskCard(): void {
 	if (!mainTaskCard) return;
 
 	mainTaskCard.innerHTML = `
-		<div class="welcome-back">
-			<div class="welcome-title">Welcome back! 😊</div>
-		</div>
 		<div class="main-task-card" style="text-align: center; padding: 40px 20px; border: 2px dashed #e5e7eb; background: #f9fafb;">
-			<div style="font-size: 48px; margin-bottom: 16px;">🌟</div>
-			<div style="font-size: 18px; font-weight: 600; color: #6b7280; margin-bottom: 8px;">No active tasks</div>
-			<div style="font-size: 14px; color: #9ca3af;">Start working and Noro will track your progress</div>
+			<div style="font-size: 48px; margin-bottom: 16px;">📝</div>
+			<div style="font-size: 18px; font-weight: 600; color: #374151; margin-bottom: 8px;">No active tasks yet</div>
+			<div style="font-size: 14px; color: #6b7280; margin-bottom: 16px;">Noro will track your work as you browse</div>
+			<div style="font-size: 12px; color: #9ca3af;">Try working on Gmail, Google Docs, Sheets, or Slides</div>
 		</div>
 	`;
 }
@@ -788,6 +806,18 @@ function setupEventListeners(): void {
 		});
 	}
 
+	// Clear recent tasks button
+	const clearRecentTasksBtn = document.getElementById("clearRecentTasksBtn");
+	if (clearRecentTasksBtn) {
+		clearRecentTasksBtn.addEventListener("click", () => {
+			const recentTasksList = document.querySelector(".recent-tasks-list");
+			if (recentTasksList) {
+				recentTasksList.innerHTML =
+					'<div style="padding: 20px; text-align: center; color: #6b7280;">No recent tasks</div>';
+			}
+		});
+	}
+
 	setInterval(loadRealData, 10000);
 }
 
@@ -817,20 +847,52 @@ async function updateRetentionDays(days: number): Promise<void> {
 
 async function triggerManualCapture(): Promise<void> {
 	console.log("[POPUP] Manual capture triggered");
+
+	// Show immediate feedback
+	const statusMessage = document.querySelector(".status-message") as HTMLElement;
+	const statusSubtitle = document.querySelector(".status-subtitle") as HTMLElement;
+	const trackingStatus = document.getElementById("trackingStatus") as HTMLElement;
+
+	if (statusMessage) statusMessage.textContent = "📸 AI Processing...";
+	if (statusSubtitle) statusSubtitle.textContent = "Capturing and analyzing your context";
+	if (trackingStatus) {
+		trackingStatus.style.display = "block";
+		trackingStatus.textContent = "⏳ Processing context... 0%";
+	}
+
 	const message: ChromeMessage = {
 		action: "manualCapture",
 	};
 
 	try {
+		// Simulate progress updates
+		let progress = 0;
+		const progressInterval = setInterval(() => {
+			progress += 20;
+			if (trackingStatus && progress <= 100) {
+				trackingStatus.textContent = `⏳ Processing context... ${progress}%`;
+			}
+			if (progress >= 100) {
+				clearInterval(progressInterval);
+			}
+		}, 400);
+
 		await chrome.runtime.sendMessage(message);
 		console.log("[POPUP] Manual capture message sent");
 
-		// Refresh data after a short delay
+		// Refresh data after completion
 		setTimeout(() => {
+			if (trackingStatus) trackingStatus.style.display = "none";
 			loadRealData();
-		}, 2000);
+		}, 2500);
 	} catch (error) {
 		console.error("[POPUP] Failed to trigger manual capture:", error);
+		if (trackingStatus) {
+			trackingStatus.textContent = "❌ Failed to capture context. Please try again.";
+			setTimeout(() => {
+				trackingStatus.style.display = "none";
+			}, 3000);
+		}
 	}
 }
 
@@ -930,6 +992,37 @@ function renderActivitiesAndInsights(activities: Activity[], insights: AIInsight
 	}
 
 	container.innerHTML = html;
+
+	// Add event delegation for all activity and insight action buttons
+	container.addEventListener("click", (e) => {
+		const target = e.target as HTMLElement;
+
+		// Handle activity action buttons
+		if (target.classList.contains("activity-action-btn")) {
+			const activityId = target.dataset.activityId;
+			const action = target.dataset.action;
+			if (activityId && action) {
+				handleActivityAction(activityId, action);
+			}
+		}
+
+		// Handle resume activity buttons
+		if (target.classList.contains("resume-activity-btn")) {
+			const activityId = target.dataset.activityId;
+			if (activityId) {
+				resumeActivity(activityId);
+			}
+		}
+
+		// Handle insight suggested action buttons
+		if (target.classList.contains("insight-suggested-action-btn")) {
+			const insightId = target.dataset.insightId;
+			const action = target.dataset.action;
+			if (insightId && action) {
+				handleInsightAction(insightId, action);
+			}
+		}
+	});
 }
 
 function createActivityCard(activity: Activity, isPrimary: boolean = false): string {
@@ -954,7 +1047,7 @@ function createActivityCard(activity: Activity, isPrimary: boolean = false): str
 						.map(
 							(action: string) => `
 						<div style="margin-bottom: 6px;">
-							<button class="action-btn" onclick="handleActivityAction('${activity.activity_id}', '${action}')" 
+							<button class="action-btn activity-action-btn" data-activity-id="${activity.activity_id}" data-action="${action}" 
 								style="width: 100%; text-align: left; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer; transition: all 0.2s;">
 								${action}
 							</button>
@@ -970,7 +1063,7 @@ function createActivityCard(activity: Activity, isPrimary: boolean = false): str
 				isPrimary
 					? `
 				<div style="margin-top: 12px;">
-					<button onclick="resumeActivity('${activity.activity_id}')" 
+					<button class="resume-activity-btn" data-activity-id="${activity.activity_id}" 
 						style="background: #10b981; color: white; border: none; border-radius: 6px; padding: 8px 16px; font-size: 14px; font-weight: 500; cursor: pointer;">
 						🚀 Resume Activity
 					</button>
@@ -1003,7 +1096,7 @@ function createInsightCardHTML(insight: AIInsight): string {
 					${insight.suggested_actions
 						.map(
 							(action: string) => `
-						<button class="action-btn" onclick="handleInsightAction('${insight.id}', '${action}')" 
+						<button class="action-btn insight-suggested-action-btn" data-insight-id="${insight.id}" data-action="${action}" 
 							style="margin-right: 8px; margin-bottom: 6px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer;">
 							${action}
 						</button>
@@ -1093,134 +1186,6 @@ function createInsightCardHTML(insight: AIInsight): string {
 
 // New Layout Functions
 
-function createSampleWorkspaces(): WorkspaceCapture[] {
-	console.log("[POPUP] Creating sample workspaces for testing");
-
-	const now = Date.now();
-	return [
-		{
-			timestamp: now - 1000 * 60 * 23, // 23 minutes ago
-			windows: [
-				{
-					windowId: 1,
-					activeTabId: 1,
-					tabs: [
-						{
-							tabId: 1,
-							isActive: true,
-							snapshot: {
-								url: "https://mail.google.com",
-								title: "Email with Mohammad",
-								timestamp: now - 1000 * 60 * 23,
-								type: "gmail",
-								data: {},
-							},
-						},
-					],
-				},
-			],
-		},
-		{
-			timestamp: now - 1000 * 60 * 60 * 2, // 2 hours ago
-			windows: [
-				{
-					windowId: 2,
-					activeTabId: 2,
-					tabs: [
-						{
-							tabId: 2,
-							isActive: true,
-							snapshot: {
-								url: "https://docs.google.com/spreadsheets/d/sample",
-								title: "Budget Report Q4.sheets",
-								timestamp: now - 1000 * 60 * 60 * 2,
-								type: "google-sheets",
-								data: {
-									workbook: "Budget Report Q4",
-									activeSheet: "Summary",
-									selectedRange: "H34",
-								},
-							},
-						},
-					],
-				},
-			],
-		},
-		{
-			timestamp: now - 1000 * 60 * 60 * 4, // 4 hours ago
-			windows: [
-				{
-					windowId: 3,
-					activeTabId: 3,
-					tabs: [
-						{
-							tabId: 3,
-							isActive: true,
-							snapshot: {
-								url: "https://docs.google.com/document/d/sample",
-								title: "Client Deck.docs",
-								timestamp: now - 1000 * 60 * 60 * 4,
-								type: "google-docs",
-								data: {
-									documentName: "Client Deck",
-								},
-							},
-						},
-					],
-				},
-			],
-		},
-		{
-			timestamp: now - 1000 * 60 * 60 * 4, // 4 hours ago
-			windows: [
-				{
-					windowId: 4,
-					activeTabId: 4,
-					tabs: [
-						{
-							tabId: 4,
-							isActive: true,
-							snapshot: {
-								url: "https://docs.google.com/presentation/d/sample",
-								title: "Client Deck.slides",
-								timestamp: now - 1000 * 60 * 60 * 4,
-								type: "google-slides",
-								data: {
-									presentationName: "Client Deck",
-								},
-							},
-						},
-					],
-				},
-			],
-		},
-		{
-			timestamp: now - 1000 * 60 * 60 * 5, // 5 hours ago
-			windows: [
-				{
-					windowId: 5,
-					activeTabId: 5,
-					tabs: [
-						{
-							tabId: 5,
-							isActive: true,
-							snapshot: {
-								url: "https://docs.google.com/presentation/d/weekly-report",
-								title: "Weekly Report",
-								timestamp: now - 1000 * 60 * 60 * 5,
-								type: "google-slides",
-								data: {
-									presentationName: "Weekly Report",
-								},
-							},
-						},
-					],
-				},
-			],
-		},
-	];
-}
-
 function displayMainTaskCard(workspace: WorkspaceCapture): void {
 	console.log("[POPUP] displayMainTaskCard called");
 	const mainTaskCard = document.getElementById("mainTaskCard");
@@ -1268,21 +1233,20 @@ function displayMainTaskCard(workspace: WorkspaceCapture): void {
 			<div class="main-task-welcome">Welcome back! 😊</div>
 			<div class="main-task-header">
 				<div class="main-task-icon ${icon.class}">${icon.emoji}</div>
-				<div class="main-task-title">${taskInfo.title}</div>
+				<div class="main-task-title">${escapeHtml(truncateText(taskInfo.title, 40))}</div>
 			</div>
 			<div class="main-task-content">
 				<div class="main-task-section-label">Last action</div>
-				<div class="main-task-description">${taskInfo.context}</div>
+				<div class="main-task-description">${escapeHtml(truncateText(taskInfo.context, 60))}</div>
 				<div class="main-task-section-label">Next step</div>
-				<div class="main-task-description">${taskInfo.task}</div>
+				<div class="main-task-description">${escapeHtml(truncateText(taskInfo.task, 60))}</div>
 				<div class="main-task-time">
 					<span>⏱️</span>
 					<span>You left ${timeAgo}</span>
 				</div>
 			</div>
 			<div class="main-task-actions">
-				<button class="primary task-resume" data-url="${primaryTask.snapshot.url}">▶ Resume Task</button>
-				<button class="secondary" onclick="viewTasks()">📋 View Tasks</button>
+				<button class="primary task-resume" data-url="${escapeHtml(primaryTask.snapshot.url)}">▶ Resume Task</button>
 			</div>
 		</div>
 	`;
@@ -1361,18 +1325,31 @@ function displayNewRecentTasks(workspaces: WorkspaceCapture[]): void {
 					<div class="recent-task-icon ${icon.class}">${icon.emoji}</div>
 					<div class="recent-task-content">
 						<div class="recent-task-title-row">
-							<div class="recent-task-title">${taskInfo.title}</div>
+							<div class="recent-task-title">${escapeHtml(truncateText(taskInfo.title, 25))}</div>
 							<div class="recent-task-time">${timeAgo}</div>
 						</div>
-						<div class="recent-task-meta">Last: ${taskInfo.context}</div>
-						<div class="recent-task-next">Next: ${taskInfo.task}</div>
-						<a href="#" class="resume-task-link" onclick="openOrSwitchToTab('${task.tab.snapshot.url}')">Resume Task ></a>
+						<div class="recent-task-meta">Last: ${escapeHtml(truncateText(taskInfo.context, 30))}</div>
+						<div class="recent-task-next">Next: ${escapeHtml(truncateText(taskInfo.task, 30))}</div>
+						<a href="#" class="resume-task-link" data-url="${escapeHtml(task.tab.snapshot.url)}">Resume Task ></a>
 					</div>
 				</div>
 			</div>
 		`;
 		})
 		.join("");
+
+	// Add event delegation for resume task links
+	const recentTasksListElement = recentTasksList as HTMLElement;
+	recentTasksListElement.addEventListener("click", (e) => {
+		const target = e.target as HTMLElement;
+		if (target.classList.contains("resume-task-link")) {
+			e.preventDefault();
+			const url = target.dataset.url;
+			if (url) {
+				openOrSwitchToTab(url);
+			}
+		}
+	});
 }
 
 function displayNewSuggestedTasks(workspaces: WorkspaceCapture[]): void {
@@ -1400,13 +1377,13 @@ function displayNewSuggestedTasks(workspaces: WorkspaceCapture[]): void {
 					<div class="suggested-header">
 						<div class="suggested-title">Suggested for you ${suggestion.icon}</div>
 					</div>
-					<div class="suggested-subtitle">${suggestion.description}</div>
-					<div class="suggested-item arrow-style" onclick="openOrSwitchToTab('${suggestion.url}')" style="cursor: pointer;">
+					<div class="suggested-subtitle">${escapeHtml(truncateText(suggestion.description, 50))}</div>
+					<div class="suggested-item arrow-style" data-url="${escapeHtml(suggestion.url)}" style="cursor: pointer;">
 						<div class="suggested-item-icon ${suggestion.itemClass}">${suggestion.itemIcon}</div>
 						<div class="suggested-item-content">
-							<div class="suggested-item-title">${suggestion.itemTitle}</div>
-							<div class="suggested-item-meta">${suggestion.itemMeta}</div>
-							<div style="font-size: 14px; color: #6b7280;">${suggestion.question}</div>
+							<div class="suggested-item-title">${escapeHtml(truncateText(suggestion.itemTitle, 30))}</div>
+							<div class="suggested-item-meta">${escapeHtml(truncateText(suggestion.itemMeta, 35))}</div>
+							<div style="font-size: 14px; color: #6b7280;">${escapeHtml(truncateText(suggestion.question, 40))}</div>
 						</div>
 						<div class="suggested-arrow">→</div>
 					</div>
@@ -1418,19 +1395,19 @@ function displayNewSuggestedTasks(workspaces: WorkspaceCapture[]): void {
 					<div class="suggested-header">
 						<div class="suggested-title">Suggested for you ${suggestion.icon}</div>
 					</div>
-					<div class="suggested-subtitle">${suggestion.description}</div>
+					<div class="suggested-subtitle">${escapeHtml(truncateText(suggestion.description, 50))}</div>
 					<div class="suggested-item">
 						<div class="suggested-item-header">
 							<div class="suggested-item-icon ${suggestion.itemClass}">${suggestion.itemIcon}</div>
 							<div class="suggested-item-content">
-								<div class="suggested-item-title">${suggestion.itemTitle}</div>
-								<div class="suggested-item-meta">${suggestion.itemMeta}</div>
+								<div class="suggested-item-title">${escapeHtml(truncateText(suggestion.itemTitle, 30))}</div>
+								<div class="suggested-item-meta">${escapeHtml(truncateText(suggestion.itemMeta, 35))}</div>
 							</div>
 						</div>
-						<div class="suggested-item-question">${suggestion.question}</div>
+						<div class="suggested-item-question">${escapeHtml(truncateText(suggestion.question, 40))}</div>
 						<div class="suggested-actions">
-							<button class="primary" onclick="openOrSwitchToTab('${suggestion.url}')">▶ ${suggestion.action}</button>
-							<button class="secondary">Dismiss</button>
+							<button class="primary suggested-open-btn" data-url="${escapeHtml(suggestion.url)}">▶ ${suggestion.action}</button>
+							<button class="secondary suggested-dismiss-btn">Dismiss</button>
 						</div>
 					</div>
 				</div>
@@ -1438,6 +1415,36 @@ function displayNewSuggestedTasks(workspaces: WorkspaceCapture[]): void {
 			}
 		})
 		.join("");
+
+	// Add event delegation for suggested task actions
+	suggestedContainer.addEventListener("click", (e) => {
+		const target = e.target as HTMLElement;
+
+		// Handle arrow-style suggestion clicks
+		if (target.closest(".suggested-item.arrow-style")) {
+			const item = target.closest(".suggested-item.arrow-style") as HTMLElement;
+			const url = item.dataset.url;
+			if (url) {
+				openOrSwitchToTab(url);
+			}
+		}
+
+		// Handle Open button clicks
+		if (target.classList.contains("suggested-open-btn")) {
+			const url = target.dataset.url;
+			if (url) {
+				openOrSwitchToTab(url);
+			}
+		}
+
+		// Handle Dismiss button clicks
+		if (target.classList.contains("suggested-dismiss-btn")) {
+			const suggestedSection = target.closest(".suggested-section");
+			if (suggestedSection) {
+				suggestedSection.remove();
+			}
+		}
+	});
 }
 
 function analyzeWorkspacesForSuggestions(workspaces: WorkspaceCapture[]): any[] {
@@ -1522,11 +1529,18 @@ function analyzeWorkspacesForSuggestions(workspaces: WorkspaceCapture[]): any[] 
 	return suggestions;
 }
 
-(window as any).clearRecentTasks = function () {
-	console.log("[POPUP] Clearing recent tasks");
-	// Implementation for clearing recent tasks
-};
+// Helper function to truncate text to prevent overflow
+function truncateText(text: string, maxLength: number): string {
+	if (!text) return "";
+	if (text.length <= maxLength) return text;
+	return text.substring(0, maxLength - 3) + "...";
+}
 
-(window as any).openOrSwitchToTab = openOrSwitchToTab;
+// Helper function to escape HTML to prevent rendering issues
+function escapeHtml(text: string): string {
+	const div = document.createElement("div");
+	div.textContent = text;
+	return div.innerHTML;
+}
 
 console.log("[POPUP] TypeScript loaded with shared types and real data integration");
