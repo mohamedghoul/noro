@@ -1,28 +1,30 @@
 {
-    "name": "noro",
-    "version": "1.0.0",
-    "description": "The Productivity Intelligence Agent",
-    "type": "module",
-    "main": "index.ts",
-    "scripts": {
-        "build": "tsc",
-        "watch": "tsc --watch"
-    },
-    "devDependencies": {
-        "typescript": "^5.9.3",
-        "@types/chrome": "^0.1.22"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/mohamedghoul/noro.git"
-    },
-    "author": {
-        "name": "Mohamed Ghoul",
-        "email": "ghoul_mohamed@outlook.com",
-        "url": "https://www.github.com/mohamedghoul"
-    },
-    "engines": {
-        "node": ">=22.20.0"
-    },
-    "private": true
+	"name": "noro",
+	"version": "1.0.0",
+	"description": "The Productivity Intelligence Agent",
+	"type": "module",
+	"main": "index.ts",
+	"scripts": {
+		"build": "tsc",
+		"watch": "tsc --watch",
+		"release": "node scripts/build-release.cjs"
+	},
+	"devDependencies": {
+		"@types/chrome": "^0.1.22",
+		"archiver": "^7.0.1",
+		"typescript": "^5.9.3"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/mohamedghoul/noro.git"
+	},
+	"author": {
+		"name": "Mohamed Ghoul",
+		"email": "ghoul_mohamed@outlook.com",
+		"url": "https://www.github.com/mohamedghoul"
+	},
+	"engines": {
+		"node": ">=14.0.0"
+	},
+	"private": true
 }
